@@ -45,3 +45,29 @@ makeMaggi("yapee", () => {
     });
   });
 });
+
+
+// make a process for sandwich making.
+
+function makeSandwich(raw, cb) {
+  console.log(`start making sandwich, ${raw}`);
+  cb();
+}
+
+function applysauces(cb){
+  console.log("start applying sauces");
+}
+
+function startstuffing(cb){
+  console.log("start stuffing the sandwich");
+  cb();
+}
+function startgrilling(cb){
+  console.log("start grilling the sandwich");
+  cb();
+}
+function Serve(cb){
+  console.log("Ready to serve");
+  cb();
+}
+
