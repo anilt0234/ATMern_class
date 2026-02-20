@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <style>
+        .container {
+            background-color: beige;
+            width: 800px;
+            height: 600px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: pink;
+            border-radius: 10px;
+        }
+
+        .circle { 
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            /* background-color: red; */
+            margin: 5px;
+            display: inline-block;
+        }
+
+        .square{
+            width: 100px;
+            height: 100px;
+            /* background-color: green; */
+            margin: 5px;
+            display: inline-block;
+        }
+    </style>
+</head>
+
+<body>
+
+    <input type="text" id="inputValue" placeholder="Enter no of shape">
+    <input type="color" id="colorValue" placeholder="Enter color">
+
+    <label for="option" class="form-label">Pick your shape:</label>
+
+    <select class="form-select" id="shapeSelect">
+        <option value="1" id="circle">circle</option>
+        <option value="2" id="square">square</option>
+    </select>
+
+    <button id="generate">Generate</button>
+
+    <div class="container"></div>
+
+    <script>
+
+        const generateBtn = document.querySelector("#generate");
+
+        generateBtn.addEventListener("click", () => {
+
+            const number = document.querySelector("#inputValue").value;
+
+            const color = document.querySelector("#colorValue").value;
+
+            for (let i=0; i < number; i++) {
+
+                const shape = document.createElement("div");
+
+                const selectedShape = document.querySelector("#shapeSelect").value;
+
+                if (selectedShape === "1") {
+
+                    shape.style.backgroundColor = color;
+
+                    shape.classList.add("circle");
+
+                } 
+
+                else if (selectedShape === "2") {
+
+                    shape.style.backgroundColor = color;
+
+                    shape.classList.add("square");
+
+                }
+
+                document.querySelector(".container").appendChild(shape);
+
+            }
+
+        });
+
+    </script>
+
+</body>
+</html>

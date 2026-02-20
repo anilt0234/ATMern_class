@@ -1,54 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <meta charset="UTF-8"> <!-- character encoding set करता है -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- mobile responsive बनाता है -->
+    <title>Document</title> <!-- page title -->
+
     <style>
         .container {
-            background-color: beige;
-            width: 800px;
-            height: 600px;
+            background-color: beige; /* container background color */
+            width: 800px; /* container width */
+            height: 600px; /* container height */
         }
+
         button {
-            padding: 10px 20px;
-            background-color: pink;
-            border-radius: 10px;
+            padding: 10px 20px; /* button spacing */
+            background-color: pink; /* button color */
+            border-radius: 10px; /* round corners */
         }
+
         .circle { 
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            background-color: red;
-            margin: 5px;
-            display: inline-block;
+            width: 100px; /* circle width */
+            height: 100px; /* circle height */
+            border-radius: 50%; /* circle shape बनाता है */
+            background-color: red; /* default color */
+            margin: 5px; /* shapes के बीच space */
+            display: inline-block; /* line में show करता है */
         }
+
         .square{
-            width: 100px;
-            height: 100px;
-            background-color: green;
+            width: 100px; /* square width */
+            height: 100px; /* square height */
+            background-color: green; /* default color */
+            margin: 5px; /* shapes के बीच space */
+            display: inline-block; /* line में show करता है */
         }
     </style>
 </head>
+
 <body>
-    <input type="text" id="inputValue" placeholder="Enter no of shape">
-    <button id="generate">Generate</button>
 
-    <div class="container"></div>
+    <input type="text" id="inputValue" placeholder="Enter no of shape"> <!-- shapes की संख्या input -->
+    <input type="color" id="colorValue" placeholder="Enter color"> <!-- color select करता है -->
+
+    <label for="option" class="form-label">Pick your color:</label> <!-- dropdown label -->
+
+    <select class="form-select" id="shapeSelect"> <!-- shape select dropdown -->
+        <option value="1" id="circle">circle</option> <!-- circle option -->
+        <option value="2" id="square">square</option> <!-- square option -->
+    </select>
+
+
+
+    <button id="generate">Generate</button> <!-- click करने पर shapes बनेंगे -->
+
+    <div class="container"></div> <!-- shapes यहाँ add होंगे -->
+
     <script>
-        const generateBtn = document.querySelector("#generate");
-        // const number = document.querySelector("#inputValue");
-        generateBtn.addEventListener("click", () => {
-            const number = document.querySelector("#inputValue").value;
-            // console.log(number)
 
-            for (let i=0; i < number; i++) {
-                const shape = document.createElement("div");
-                shape.classList.add("circle");
-                document.querySelector(".container").appendChild(shape);
+        const generateBtn = document.querySelector("#generate"); // generate button select करता है
+
+        generateBtn.addEventListener("click", () => { // button click event
+
+            const number = document.querySelector("#inputValue").value; // number input लेता है
+
+            const color = document.querySelector("#colorValue").value; // color input लेता है
+
+            for (let i=0; i < number; i++) { // loop shapes बनाने के लिए
+
+                const shape = document.createElement("div"); // नया div create करता है
+
+                const selectedShape = document.querySelector("#shapeSelect").value; // selected shape लेता है
+
+                if (selectedShape === "1") { // अगर circle select है
+
+                    shape.style.backgroundColor = color; // shape color set करता है
+
+                    shape.classList.add("circle"); // circle class add करता है
+
+                } 
+
+                else if (selectedShape === "2") { // अगर square select है
+
+                    shape.style.backgroundColor = color; // shape color set करता है
+
+                    shape.classList.add("square"); // square class add करता है
+
+                }
+
+                document.querySelector(".container").appendChild(shape); // shape container में add करता है
+
             }
+
         });
 
     </script>
+
 </body>
 </html>
