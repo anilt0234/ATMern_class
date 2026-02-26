@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Weather App</title>
+    <style>
+        body{
+            font-family: Arial;
+            text-align:center;
+            margin-top:100px;
+            background:#f2f2f2;
+        }
+        input{
+            padding:10px;
+            width:200px;
+        }
+        button{
+            padding:10px 15px;
+            cursor:pointer;
+        }
+        .weather-box{
+            margin-top:20px;
+            font-size:18px;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Weather Report</h2>
+
+<input type="text" id="city" placeholder="Enter city name">
+<button onclick="getWeather()">Get Weather</button>
+
+<div class="weather-box" id="result"></div>
+
+<script>
+async function getWeather(){
+
+    const city = document.getElementById("city").value;
+
+    const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=1`;
+
+    try{
+
+        const geoResponse = await fetch(geoUrl);
+        const geoData = await geoResponse.json();
+
+        if(!geoData.results){
+            document.getElementById("result").innerHTML = "City not found!";
+            return;
+        }
+
+        const latitude = geoData.results[0].latitude;
+        const longitude = geoData.results[0].longitude;
+
+        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`;
+
+        const weatherResponse = await fetch(weatherUrl);
+        const weatherData = await weatherResponse.json();
+
+        document.getElementById("result").innerHTML = `
+            <p><b>City:</b> ${geoData.results[0].name}</p>
+            <p><b>Temperature:</b> ${weatherData.current_weather.temperature} °C</p>
+            <p><b>Wind Speed:</b> ${weatherData.current_weather.windspeed} km/h</p>
+        `;
+
+    }
+    catch(error){
+        document.getElementById("result").innerHTML = "Error fetching data!";
+    }
+}
+</script>
+
+</body>
+</html>

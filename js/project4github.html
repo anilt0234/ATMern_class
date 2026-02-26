@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GitHub Profile Fetcher</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f2f4f7;
+      padding: 40px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+    }
+
+    h1 {
+      margin-bottom: 5px;
+    }
+
+    .search-box {
+      display: flex;
+      gap: 10px;
+      margin: 20px 0;
+    }
+
+    .search-box input {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    .search-box button {
+      padding: 12px 20px;
+      border: none;
+      background-color: #0d6efd;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .card {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      display: none;
+    }
+
+    .profile-header {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .profile-header img {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+    }
+
+    .profile-info h2 {
+      margin: 0;
+    }
+
+    .stats {
+      display: flex;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .stat-box {
+      flex: 1;
+      background: #f7f9fc;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .details {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .detail-box {
+      background: #f7f9fc;
+      padding: 15px;
+      border-radius: 10px;
+    }
+
+    .label {
+      font-size: 13px;
+      color: gray;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <h1>GitHub Username Fetcher</h1>
+    <p>Search any public GitHub profile and view full account details.</p>
+
+    <div class="search-box">
+      <input type="text" id="user" placeholder="Enter GitHub username" />
+      <button id="fetch">Get Profile</button>
+    </div>
+
+    <div class="card" id="profileCard">
+      <div class="profile-header">
+        <img id="avatar" src="" />
+        <div class="profile-info">
+          <h2 id="name"></h2>
+          <p id="username"></p>
+          <p id="bio"></p>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat-box">
+          <div class="label">Followers</div>
+          <h3 id="followers"></h3>
+        </div>
+        <div class="stat-box">
+          <div class="label">Following</div>
+          <h3 id="following"></h3>
+        </div>
+        <div class="stat-box">
+          <div class="label">Public Repos</div>
+          <h3 id="repos"></h3>
+        </div>
+      </div>
+
+      <div class="details">
+        <div class="detail-box">
+          <div class="label">Company</div>
+          <p id="company"></p>
+        </div>
+
+        <div class="detail-box">
+          <div class="label">Location</div>
+          <p id="location"></p>
+        </div>
+
+        <div class="detail-box">
+          <div class="label">Blog / Website</div>
+          <p id="blog"></p>
+        </div>
+
+        <div class="detail-box">
+          <div class="label">GitHub Profile</div>
+          <p id="profileLink"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const fetchBtn = document.querySelector("#fetch");
+    const card = document.querySelector("#profileCard");
+
+    fetchBtn.addEventListener("click", () => {
+      const userInput = document.querySelector("#user").value;
+
+      fetch(`https://api.github.com/users/${userInput}`)
+        .then(res => res.json())
+        .then(data => {
+
+          document.getElementById("avatar").src = data.avatar_url;
+          document.getElementById("name").innerText = data.name || "No Name";
+          document.getElementById("username").innerText = "@" + data.login;
+          document.getElementById("bio").innerText = data.bio || "No Bio Available";
+
+          document.getElementById("followers").innerText = data.followers;
+          document.getElementById("following").innerText = data.following;
+          document.getElementById("repos").innerText = data.public_repos;
+
+          document.getElementById("company").innerText = data.company || "Not Available";
+          document.getElementById("location").innerText = data.location || "Not Available";
+          document.getElementById("blog").innerText = data.blog || "Not Available";
+          document.getElementById("profileLink").innerHTML =
+            `<a href="${data.html_url}" target="_blank">${data.html_url}</a>`;
+
+          card.style.display = "block";
+        });
+    });
+  </script>
+
+</body>
+</html>
