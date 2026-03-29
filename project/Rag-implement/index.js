@@ -2,132 +2,102 @@ import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/huggingface_transformers";
-import { HNSWLib } from "@langchain/community/vectorstores/hnswlib";
-import { Document } from "@langchain/core/documents";
-import { createRetrievalChain } from "@langchain/classic/chains/retrieval";
-import { createStuffDocumentsChain } from "@langchain/classic/chains/combine_documents";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
+import { StringOutputParser } from "@langchain/core/output_parsers";
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
 
-let retrievalChain;
+let documents = [];
 let isInitialized = false;
+let llm;
+
+// Simple cosine similarity search without any vector store library
+function cosineSimilarity(a, b) {
+  let dot = 0, normA = 0, normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB) + 1e-10);
+}
+
+// Embed text using the pipeline from @xenova/transformers
+let embedder;
+async function embed(text) {
+  if (!embedder) {
+    const { pipeline } = await import("@xenova/transformers");
+    embedder = await pipeline("feature-extraction", "Xenova/all-MiniLM-L6-v2");
+  }
+  const output = await embedder(text, { pooling: "mean", normalize: true });
+  return Array.from(output.data);
+}
+
+async function retrieve(query, k = 3) {
+  const queryVec = await embed(query);
+  const scored = documents.map((doc) => ({
+    doc,
+    score: cosineSimilarity(queryVec, doc.embedding),
+  }));
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, k).map((s) => s.doc.pageContent);
+}
 
 async function initializeRAG() {
   if (!process.env.GOOGLE_API_KEY) {
-    console.error("Error: GOOGLE_API_KEY is not set in the .env file.");
+    console.error("GOOGLE_API_KEY is not set in .env");
     process.exit(1);
   }
 
-  console.log("Fetching products from dummyjson API...");
+  console.log("Fetching products...");
   const res = await fetch("https://dummyjson.com/products?limit=100");
-  if (!res.ok) throw new Error(`Failed to fetch products: ${res.status}`);
-  const jsonData = await res.json();
-  const products = jsonData.products || [];
+  const { products = [] } = await res.json();
 
-  console.log(`Processing ${products.length} products into documents...`);
-  const documents = products.map((product) => {
-    const content = `Product Name: ${product.title}
-Brand: ${product.brand}
-Category: ${product.category}
-Description: ${product.description}
-Price: $${product.price}
-Rating: ${product.rating} / 5
-Tags: ${product.tags ? product.tags.join(", ") : "None"}`;
+  console.log(`Embedding ${products.length} products (this takes a minute)...`);
+  for (const p of products) {
+    const pageContent = `Product: ${p.title}\nBrand: ${p.brand}\nCategory: ${p.category}\nDescription: ${p.description}\nPrice: $${p.price}\nRating: ${p.rating}/5`;
+    const embedding = await embed(pageContent);
+    documents.push({ pageContent, embedding });
+  }
 
-    return new Document({
-      pageContent: content,
-      metadata: {
-        id: product.id,
-        category: product.category,
-        title: product.title,
-      },
-    });
-  });
+  llm = new ChatGoogleGenerativeAI({ model: "gemini-2.5-flash", temperature: 0.3 });
 
-  console.log(
-    "Initializing local HNSWLib vector store with HuggingFace Embeddings...",
-  );
-  const embeddings = new HuggingFaceTransformersEmbeddings({
-    modelName: "Xenova/all-MiniLM-L6-v2",
-  });
-
-  const vectorStore = await HNSWLib.fromDocuments(documents, embeddings);
-  const retriever = vectorStore.asRetriever({ k: 3 });
-
-  // Use the canonical name gemini-1.5-flash as the latest suffix was causing 404s in some environments
-  const llm = new ChatGoogleGenerativeAI({
-    model: "gemini-2.5-flash",
-    temperature: 0.3,
-  });
-
-  const systemTemplate = `You are a helpful and knowledgeable shopping assistant for our e-commerce store.
-Use the following pieces of retrieved context to answer the question.
-If the answer is not in the context, say that you don't know or don't have information on that product.
-Use the product names, prices, and descriptions exactly as they appear in the documentation. Keep the answer concise.
-
-Context: {context}`;
-
-  const prompt = ChatPromptTemplate.fromMessages([
-    ["system", systemTemplate],
-    ["human", "{input}"],
-  ]);
-
-  const combineDocsChain = await createStuffDocumentsChain({
-    llm,
-    prompt,
-  });
-
-  retrievalChain = await createRetrievalChain({
-    retriever,
-    combineDocsChain,
-  });
-
-  console.log("RAG system initialized successfully.");
+  console.log("RAG ready.");
   isInitialized = true;
 }
 
 app.post("/api/chat", async (req, res) => {
   const { message } = req.body;
-  if (!message) {
-    return res.status(400).json({ error: "Message is required" });
-  }
-
-  if (!isInitialized) {
-    return res
-      .status(503)
-      .json({
-        error:
-          "RAG system is still initializing. Please try again in a moment.",
-      });
-  }
+  if (!message) return res.status(400).json({ error: "Message is required" });
+  if (!isInitialized) return res.status(503).json({ error: "Still initializing, try again shortly." });
 
   try {
-    const response = await retrievalChain.invoke({
-      input: message,
-    });
-    res.json({ answer: response.answer });
-  } catch (error) {
-    console.error("Error generating response:", error);
-    res
-      .status(500)
-      .json({
-        error:
-          "Failed to generate response. Check your API key and network connection.",
-      });
+    const context = (await retrieve(message)).join("\n\n");
+    const prompt = ChatPromptTemplate.fromMessages([
+      ["system", `You are a helpful shopping assistant. Use the context to answer. Be concise.\n\nContext:\n{context}`],
+      ["human", "{question}"],
+    ]);
+    const chain = prompt.pipe(llm).pipe(new StringOutputParser());
+    const answer = await chain.invoke({ context, question: message });
+    res.json({ answer });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to generate response." });
   }
 });
 
 app.listen(PORT, async () => {
-  console.log(`🚀 Server is running on http://localhost:${PORT}`);
-  await initializeRAG();
-  console.log("✅ Chatbot ready for queries.");
+  console.log(`Server running on http://localhost:${PORT}`);
+  try {
+    await initializeRAG();
+  } catch (err) {
+    console.error("RAG init failed:", err.message);
+  }
 });
